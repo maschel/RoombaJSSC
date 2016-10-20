@@ -30,62 +30,19 @@
 
 package com.maschel.roomba;
 
-import jssc.SerialPort;
 import jssc.SerialPortException;
 import jssc.SerialPortList;
-import static org.junit.Assert.*;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.*;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.Matchers;
+import org.mockito.Mockito;
 
-import java.util.List;
+import static org.junit.Assert.*;
 
 /**
- * Unit test for RoombaJSSCSerialTest.
+ * Unit test for RoombaJSSCSerial.
  */
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({RoombaJSSCSerial.class, SerialPortList.class})
-public class RoombaJSSCSerialTest
+public class RoombaJSSCSerialTest extends RoombaJSSCTestSuite
 {
-    @Mock SerialPort serialPort;
-
-    @InjectMocks private RoombaJSSCSerial roombaSerial;
-
-    private final String SERIAL_PORT = "/dev/tty.mock";
-
-    private final SerialPortException mockSerialPortException = new SerialPortException("mock", "mock", "mock");
-
-    private boolean setUpIsDone = false;
-
-    public void setUp() throws Exception {
-        if (setUpIsDone) {
-            return;
-        }
-        setUpIsDone = true;
-
-        // Insert single run setup here
-    }
-
-    @Before
-    public void setUpBefore() throws Exception {
-        // Mock SerialPortList class
-        PowerMockito.mockStatic(SerialPortList.class);
-        // By default return a serial port
-        Mockito.when(SerialPortList.getPortNames()).thenReturn(new String[] {SERIAL_PORT});
-        // Replace new SerialPort instances with Mock
-        PowerMockito.whenNew(SerialPort.class).withAnyArguments().thenReturn(serialPort);
-        // Always allow to open the serial port
-        Mockito.when(serialPort.openPort()).thenReturn(true);
-        // Always return true on writeInt to serialPort
-        Mockito.when(serialPort.writeInt(Matchers.anyInt())).thenReturn(true);
-        // Always return true on writeBytes to serialPort
-        Mockito.when(serialPort.writeBytes(Matchers.any(byte[].class))).thenReturn(true);
-    }
-
     /**
      * Test if portList method returns a list (instead of null)
      */
