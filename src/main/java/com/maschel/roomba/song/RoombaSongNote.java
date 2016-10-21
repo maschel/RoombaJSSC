@@ -30,6 +30,11 @@
 
 package com.maschel.roomba.song;
 
+/**
+ * Class used for describing Roomba Songs
+ * A RoombaSongNote consists of a note (RoombaNote) and a
+ * duration (RoombaNoteDuration)
+ */
 public class RoombaSongNote {
 
     private RoombaNote note;
@@ -40,6 +45,20 @@ public class RoombaSongNote {
         this.duration = duration;
     }
 
+    public RoombaNote getNote() {
+        return note;
+    }
+
+    public RoombaNoteDuration getDuration() {
+        return duration;
+    }
+
+    /**
+     * Get the byte array of give RoombaSongNote array.
+     * @param notes RoombaSongNote array
+     * @param tempo Tempo in BPM at which notes should be played
+     * @return byte[] of notes and note duration.
+     */
     public static byte[] songNotesToBytes(RoombaSongNote[] notes, int tempo) {
         byte[] bytes = new byte[notes.length * 2];
         int cursor = 0;

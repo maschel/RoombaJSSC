@@ -30,6 +30,10 @@
 
 package com.maschel.roomba.song;
 
+/**
+ * Enum of most common note durations
+ * Usage: RoombaNoteDuration.QuarterNote (for quarter note duration).
+ */
 public enum RoombaNoteDuration {
     SixteenthNote(0.25),
     EightNote(0.5),
@@ -43,14 +47,25 @@ public enum RoombaNoteDuration {
         this.duration = duration;
     }
 
+    /**
+     * Get the byte representation of the relative note duration
+     * @param tempo Tempo in BPM
+     * @return Note duration relative to BPM in byte representation
+     */
+    public byte getDurationByte(int tempo) {
+        return (byte)(getDurationRelativeToTempo(tempo));
+    }
+
+    /**
+     * Gives the duration of a note relative to the tempo in BPM, using the
+     * Quarternote as base note.
+     * @param tempo Tempo in BPM
+     * @return The note duration relative to the tempo in BPM
+     */
     private int getDurationRelativeToTempo(int tempo) {
         double quarterLength = 60.0/tempo;
         int relDuration = (int)(0x40*duration*quarterLength);
 
         return relDuration;
-    }
-
-    public byte getDurationByte(int tempo) {
-        return (byte)(getDurationRelativeToTempo(tempo));
     }
 }

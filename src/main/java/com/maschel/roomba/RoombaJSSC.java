@@ -33,6 +33,31 @@ package com.maschel.roomba;
 import com.maschel.roomba.song.RoombaSongNote;
 import org.apache.log4j.Logger;
 
+/**
+ * RoombaJSSC - Library for controlling a roomba using the JSSC serial library.
+ *
+ * This abstract class contains all the (serial)implementation independent
+ * methods/commands that can be send to or read from the Roomba.
+ * The main reason to split the roomba commands from the serial implementation
+ * is to give future support for multiple serial libraries and/or library API changes.
+ *
+ * Standard library lifecycle:
+ *
+ * // Setup
+ * RoombaJSSC roomba = new RoombaJSSCSerial();
+ * String[] ports = roomba.portList();
+ * roomba.connect("a-serial-port"); // Use portList(); to get available ports.
+ *
+ * // Send commands
+ * roomba.startup();
+ * roomba.clean();
+ * // ...etc
+ *
+ * // Close connection
+ * roomba.stop();
+ * roomba.disconnect();
+ *
+ */
 public abstract class RoombaJSSC {
 
     final static Logger log = Logger.getLogger(RoombaJSSC.class);

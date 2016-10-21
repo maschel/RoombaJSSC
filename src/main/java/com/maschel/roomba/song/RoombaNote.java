@@ -30,6 +30,10 @@
 
 package com.maschel.roomba.song;
 
+/**
+ * Enum of all notes that can be played by the Roomba
+ * Usage: RoombaNote.C1 (for C note first octave).
+ */
 public enum RoombaNote {
     // Pause (no sound)
     Pause(0),
@@ -83,6 +87,10 @@ public enum RoombaNote {
         this.note = note;
     }
 
+    /**
+     * Get the byte representation of the note
+     * @return RoombaNote in byte representation
+     */
     public byte getNoteByte() {
         return (byte)note;
     }

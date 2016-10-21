@@ -34,6 +34,10 @@ import jssc.SerialPort;
 import jssc.SerialPortException;
 import jssc.SerialPortList;
 
+/**
+ * RoombaJSSC implementation, this class contains all the serial library
+ * dependent code.
+ */
 public class RoombaJSSCSerial extends RoombaJSSC {
 
     public SerialPort serialPort;
@@ -41,6 +45,10 @@ public class RoombaJSSCSerial extends RoombaJSSC {
     private String portName = null;
 
 
+    /**
+     * Get the list of available serial ports.
+     * @return String[] of serial ports.
+     */
     public String[] portList() {
         String[] portNames = SerialPortList.getPortNames();
         if (portNames.length == 0) {
@@ -49,6 +57,11 @@ public class RoombaJSSCSerial extends RoombaJSSC {
         return portNames;
     }
 
+    /**
+     * Connect to serial port.
+     * @param portId Name of serial port.
+     * @return True on success, False on failure.
+     */
     public boolean connect(String portId) {
         portName = portId;
         log.info("Connecting to port: '" + portName + "'.");
@@ -58,6 +71,9 @@ public class RoombaJSSCSerial extends RoombaJSSC {
         return connected;
     }
 
+    /**
+     * Disconnect serial port.
+     */
     public void disconnect() {
         try {
             if (serialPort != null) serialPort.closePort();
@@ -68,6 +84,11 @@ public class RoombaJSSCSerial extends RoombaJSSC {
         serialPort = null;
     }
 
+    /**
+     * Send byte[] to serial port.
+     * @param bytes Bytes to send.
+     * @return True on success, False on failure.
+     */
     public boolean send(byte[] bytes) {
         try {
             log.debug("Sending byte array, of size: '" + bytes.length + "' to serial port.");
@@ -80,6 +101,11 @@ public class RoombaJSSCSerial extends RoombaJSSC {
 
     }
 
+    /**
+     * Send integer to serial port.
+     * @param b Integer to send.
+     * @return True on success, False on failure.
+     */
     public boolean send(int b) {
         try {
             log.debug("Sending data: '" + b + "' to serial port.");
@@ -91,6 +117,11 @@ public class RoombaJSSCSerial extends RoombaJSSC {
         }
     }
 
+    /**
+     * Checks if a given serial port exists.
+     * @param portId Name of serial port.
+     * @return True if port exists, false if non existing port.
+     */
     private boolean portExists(String portId) {
         // Check if requested port exists
         for (String portName: portList()) {
@@ -100,6 +131,10 @@ public class RoombaJSSCSerial extends RoombaJSSC {
         return false;
     }
 
+    /**
+     * Opens the serial port and sets the port parameters.
+     * @return True on success, false on failure.
+     */
     private boolean open_port() {
         if (portExists(portName)) {
             boolean success;
