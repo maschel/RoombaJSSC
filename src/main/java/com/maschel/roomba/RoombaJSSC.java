@@ -36,6 +36,10 @@ import org.apache.log4j.Logger;
 /**
  * RoombaJSSC - Library for controlling a roomba using the JSSC serial library.
  *
+ * This library implements (basically) all the commands and sensors specified
+ * in the iRobot Create 2 Open Interface Specification based on Roomba 600
+ * http://www.irobot.com/~/media/MainSite/PDFs/About/STEM/Create/create_2_Open_Interface_Spec.pdf
+ *
  * This abstract class contains all the (serial)implementation independent
  * methods/commands that can be send to or read from the Roomba.
  * The main reason to split the roomba commands from the serial implementation
@@ -53,6 +57,15 @@ import org.apache.log4j.Logger;
  * roomba.clean();
  * // ...etc
  *
+ * // Read sensor values
+ * while (condition) {
+ *     roomba.updateSensors();
+ *     roomba.sleep(50); // Sleep for (min!) 50ms
+ *     // Read sensor values
+ *     System.out.println(roomba.batteryVoltage());
+ *     // ..etc
+ * }
+ *
  * // Close connection
  * roomba.stop();
  * roomba.disconnect();
@@ -63,6 +76,12 @@ public abstract class RoombaJSSC {
     final static Logger log = Logger.getLogger(RoombaJSSC.class);
 
     boolean connected = false;
+
+    byte[] sensorDataBuffer = new byte[80];
+    int sensorDataBufferIndex = 0;
+    byte[] currentSensorData = new byte[80];
+
+    private long lastSensorUpdate = 0;
 
     public RoombaJSSC() {}
 
@@ -582,6 +601,623 @@ public abstract class RoombaJSSC {
 
     //endregion
 
+    //region Roomba Sensor commands
+
+    /**
+     * This command requests new sensor data from the roomba.
+     * <p>Note: Don't invoke this method more than once per 50ms, this will possibly corrupt the sensor data received
+     * from the roomba.</p>
+     * @throws RuntimeException If sensor data updates are requested more than once per 50ms.
+     */
+    public void updateSensors() throws RuntimeException {
+
+        final long now = System.currentTimeMillis();
+        if (lastSensorUpdate != 0 && (now - lastSensorUpdate) < 50) {
+            throw new RuntimeException("Too many updateSensor() invocations, this should be limited to max " +
+                    "one invocation per 50ms.");
+        }
+        lastSensorUpdate = now;
+
+        // Ensure we reset the buffer to starting position
+        sensorDataBufferIndex = 0;
+
+        log.debug("Requesting new sensor data.");
+        byte[] cmd = { (byte)OPC_QUERY, (byte)SENSOR_PACKET_ALL };
+        send(cmd);
+    }
+
+    //endregion
+
+    //region Roomba sensor value getters
+
+    /**
+     * Get value of right bumper sensor.
+     * @return True if bumped right
+     */
+    public boolean bumpRight() {
+        return (currentSensorData[SENSOR_BUMPS_WHEELDROPS_OFFSET] & SENSOR_BUMP_RIGHT_MASK) != 0;
+    }
+
+    /**
+     * Get value of left bumper sensor.
+     * @return True if bumped left
+     */
+    public boolean bumpLeft() {
+        return (currentSensorData[SENSOR_BUMPS_WHEELDROPS_OFFSET] & SENSOR_BUMP_LEFT_MASK) != 0;
+    }
+
+    /**
+     * Get value of right wheel drop sensor.
+     * @return True if wheel drops right
+     */
+    public boolean wheelDropRight() {
+        return (currentSensorData[SENSOR_BUMPS_WHEELDROPS_OFFSET] & SENSOR_WHEELDROP_RIGHT_MASK) != 0;
+    }
+
+    /**
+     * Get value of left wheel drop sensor.
+     * @return True if wheel drops left
+     */
+    public boolean wheelDropLeft() {
+        return (currentSensorData[SENSOR_BUMPS_WHEELDROPS_OFFSET] & SENSOR_WHEELDROP_LEFT_MASK) != 0;
+    }
+
+    /**
+     * Get value of wall sensor.
+     * @return True if wall is seen
+     */
+    public boolean wall() {
+        return currentSensorData[SENSOR_WALL_OFFSET] != 0;
+    }
+
+    /**
+     * Get value of cliff left sensor.
+     * @return True if cliff is seen on left side
+     */
+    public boolean cliffLeft() {
+        return currentSensorData[SENSOR_CLIFF_LEFT_OFFSET] != 0;
+    }
+
+    /**
+     * Get value of cliff front left sensor.
+     * @return True if cliff is seen on front left
+     */
+    public boolean cliffFrontLeft() {
+        return currentSensorData[SENSOR_CLIFF_FRONT_LEFT_OFFSET] != 0;
+    }
+
+    /**
+     * Get value of cliff front right sensor.
+     * @return True if cliff is seen on front right
+     */
+    public boolean cliffFrontRight() {
+        return currentSensorData[SENSOR_CLIFF_FRONT_RIGHT_OFFSET] != 0;
+    }
+
+    /**
+     * Get value of cliff right sensor.
+     * @return True if cliff is seen on right side
+     */
+    public boolean cliffRight() {
+        return currentSensorData[SENSOR_CLIFF_RIGHT_OFFSET] != 0;
+    }
+
+    /**
+     * Get value of virtual wall sensor.
+     * @return True if a virtual wall is detected
+     */
+    public boolean virtualWall() {
+        return currentSensorData[SENSOR_VIRTUAL_WALL_OFFSET] != 0;
+    }
+
+    /**
+     * Get value of side brush overcurrent sensor.
+     * @return True if side brush overcurrent
+     */
+    public boolean sideBrushOvercurrent() {
+        return (currentSensorData[SENSOR_WHEEL_OVERCURRENT_OFFSET] & SENSOR_OVERCURRENT_SIDE_BRUSH_MASK) != 0;
+    }
+
+    /**
+     * Get value of main brush overcurrent sensor.
+     * @return True if main brush overcurrent
+     */
+    public boolean mainBrushOvercurrent() {
+        return (currentSensorData[SENSOR_WHEEL_OVERCURRENT_OFFSET] & SENSOR_OVERCURRENT_MAIN_BRUSH_MASK) != 0;
+    }
+
+    /**
+     * Get value of right wheel overcurrent sensor.
+     * @return True if right wheel overcurrent
+     */
+    public boolean wheelOvercurrentRight() {
+        return (currentSensorData[SENSOR_WHEEL_OVERCURRENT_OFFSET] & SENSOR_OVERCURRENT_RIGHT_WHEEL_MASK) != 0;
+    }
+
+    /**
+     * Get value of left wheel overcurrent sensor.
+     * @return True if left wheel overcurrent
+     */
+    public boolean wheelOvercurrentLeft() {
+        return (currentSensorData[SENSOR_WHEEL_OVERCURRENT_OFFSET] & SENSOR_OVERCURRENT_LEFT_WHEEL_MASK) != 0;
+    }
+
+    /**
+     * Get the level of the dirt detect sensor.
+     * @return Dirt level (0-255)
+     */
+    public int dirtDetectLevel() {
+        return currentSensorData[SENSOR_DIRT_DETECT_OFFSET];
+    }
+
+    /**
+     * Get the character currently received by the omnidirectional receiver.
+     * @return Received character (0-255)
+     */
+    public int infraredCharacterOmni() {
+        return currentSensorData[SENSOR_INFRARED_CHAR_OMNI_OFFSET];
+    }
+
+    /**
+     * Get the character currently received by the left receiver.
+     * @return Received character (0-255)
+     */
+    public int infraredCharacterLeft() {
+        return currentSensorData[SENSOR_INFRARED_CHAR_LEFT_OFFSET];
+    }
+
+    /**
+     * Get the character currently received by the right receiver.
+     * @return Received character (0-225)
+     */
+    public int infraredCharacterRight() {
+        return currentSensorData[SENSOR_INFRARED_CHAR_RIGHT_OFFSET];
+    }
+
+    /**
+     * Check if the clean button is pressed.
+     * @return True if pressed
+     */
+    public boolean buttonCleanPressed() {
+        return (currentSensorData[SENSOR_BUTTONS_OFFSET] & BUTTONS_CLEAN_MASK) != 0;
+    }
+
+    /**
+     * Check if the spot button is pressed.
+     * @return True if pressed
+     */
+    public boolean buttonSpotPressed() {
+        return (currentSensorData[SENSOR_BUTTONS_OFFSET] & BUTTONS_SPOT_MASK) != 0;
+    }
+
+    /**
+     * Check if the dock button is pressed.
+     * @return True if pressed
+     */
+    public boolean buttonDockPressed() {
+        return (currentSensorData[SENSOR_BUTTONS_OFFSET] & BUTTONS_DOCK_MASK) != 0;
+    }
+
+    /**
+     * Check if the minute button is pressed.
+     * @return True if pressed
+     */
+    public boolean buttonMinutePressed() {
+        return (currentSensorData[SENSOR_BUTTONS_OFFSET] & BUTTONS_MINUTE_MASK) != 0;
+    }
+
+    /**
+     * Check if the hour button is pressed.
+     * @return True if pressed
+     */
+    public boolean buttonHourPressed() {
+        return (currentSensorData[SENSOR_BUTTONS_OFFSET] & BUTTONS_HOUR_MASK) != 0;
+    }
+
+    /**
+     * Check if the day button is pressed.
+     * @return True if pressed
+     */
+    public boolean buttonDayPressed() {
+        return (currentSensorData[SENSOR_BUTTONS_OFFSET] & BUTTONS_DAY_MASK) != 0;
+    }
+
+    /**
+     * Check if the schedule button is pressed.
+     * @return True if pressed
+     */
+    public boolean buttonSchedulePressed() {
+        return (currentSensorData[SENSOR_BUTTONS_OFFSET] & BUTTONS_SCHEDULE_MASK) != 0;
+    }
+
+    /**
+     * Check if the clock button is pressed.
+     * @return True if pressed
+     */
+    public boolean buttonClockPressed() {
+        return (currentSensorData[SENSOR_BUTTONS_OFFSET] & BUTTONS_CLOCK_MASK) != 0;
+    }
+
+    /**
+     * Get distance travelled in mm since the last sensor data request.
+     * <p>Note: if the sensor data is not polled frequently enough this value is capped at its
+     * minimum or maximum (-32768, 32767)</p>
+     * @return Distance travelled in mm since last sensor data request
+     */
+    public int distanceTraveled() {
+        return signed16BitToInt(currentSensorData[SENSOR_DISTANCE_OFFSET], currentSensorData[SENSOR_DISTANCE_OFFSET+1]);
+    }
+
+    /**
+     * Get the angle turned in degrees since the last sensor data request.
+     * Counter-clockwise angles are positive, clockwise angles are negative.
+     * <p>Note: if the sonsor data is not polled requently enough this value is capped at its
+     * minimum or maximum (-32768, 32767)</p>
+     * @return Angle turned in degrees since last sensor data request
+     */
+    public int angleTurned() {
+        return signed16BitToInt(currentSensorData[SENSOR_ANGLE_OFFSET], currentSensorData[SENSOR_ANGLE_OFFSET+1]);
+    }
+
+    /**
+     * Get current charging state
+     * <p>States:</p>
+     * <ul>
+     *     <li>0 = Not charging</li>
+     *     <li>1 = Reconditioning charging</li>
+     *     <li>2 = Full charging</li>
+     *     <li>3 = Trickle Charging</li>
+     *     <li>4 = Waiting</li>
+     *     <li>5 = Charging Fault condition</li>
+     * </ul>
+     * @return Charging state (0-5)
+     */
+    public int chargingState() {
+        return currentSensorData[SENSOR_CHARGING_STATE_OFFSET];
+    }
+
+    /**
+     * Get the voltage of the battery in millivolt (mV)
+     * @return battery voltage (0 - 65535 mV)
+     */
+    public int batteryVoltage() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_VOLTAGE_OFFSET], currentSensorData[SENSOR_VOLTAGE_OFFSET+1]);
+    }
+
+    /**
+     * Get the current in milliamps (mA) flowing into or out of roomba's battery. Negative currents indicate that the
+     * current is flowing out of the battery, as during normal running. Positive currents indicate that the current
+     * is flowing into the battery, as during charging.
+     * @return Current in milliamps (-32768, 32768 mA)
+     */
+    public int batteryCurrent() {
+        return signed16BitToInt(currentSensorData[SENSOR_CURRENT_OFFSET], currentSensorData[SENSOR_CURRENT_OFFSET+1]);
+    }
+
+    /**
+     * Get the temperature of Roomba's battery in degrees Celsius.
+     * @return Battery temperature in degrees Celsius (-128, 127)
+     */
+    public int batteryTemperature() {
+        return currentSensorData[SENSOR_TEMPERATURE_OFFSET];
+    }
+
+    /**
+     * Get the estimated charge of the roomba's battery in milliamp-hours (mAh).
+     * @return Estimated battery charge (0 - 65535 mAh)
+     */
+    public int batteryCharge() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_BATTERY_CHARGE_OFFSET],
+                currentSensorData[SENSOR_BATTERY_CHARGE_OFFSET+1]);
+    }
+
+    /**
+     * Get the estimated charge capacity of roomba's battery in milliamp-hours (mAh)
+     * @return Estimated charge capacity (0 - 65535 mAh)
+     */
+    public int batteryCapacity() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_BATTERY_CAPACITY_OFFSET],
+                currentSensorData[SENSOR_BATTERY_CAPACITY_OFFSET+1]);
+    }
+
+    /**
+     * Get the strength of the wall signal.
+     * @return Strength of wall signal (0-1023)
+     */
+    public int wallSignal() {
+       return unsigned16BitToInt(currentSensorData[SENSOR_WALL_SIGNAL_OFFSET],
+               currentSensorData[SENSOR_WALL_SIGNAL_OFFSET+1]);
+    }
+
+    /**
+     * Get the strength of the cliff left signal.
+     * @return Strength of cliff left signal(0-4095)
+     */
+    public int cliffSignalLeft() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_CLIFF_LEFT_SIGNAL_OFFSET],
+                currentSensorData[SENSOR_CLIFF_LEFT_SIGNAL_OFFSET+1]);
+    }
+
+    /**
+     * Get the strength of the cliff front left signal.
+     * @return Strength of cliff front left signal(0-4095)
+     */
+    public int cliffSignalFrontLeft() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_CLIFF_FRONT_LEFT_SIGNAL_OFFSET],
+                currentSensorData[SENSOR_CLIFF_FRONT_LEFT_SIGNAL_OFFSET+1]);
+    }
+
+    /**
+     * Get the strength of the cliff front right signal.
+     * @return Strength of cliff front left signal(0-4095)
+     */
+    public int cliffSignalFrontRight() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_CLIFF_FRONT_RIGHT_SIGNAL_OFFSET],
+                currentSensorData[SENSOR_CLIFF_FRONT_RIGHT_SIGNAL_OFFSET+1]);
+    }
+
+    /**
+     * Get the strength of the cliff right signal.
+     * @return Strength of cliff right signal(0-4095)
+     */
+    public int cliffSignalRight() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_CLIFF_RIGHT_SIGNAL_OFFSET],
+                currentSensorData[SENSOR_CLIFF_RIGHT_SIGNAL_OFFSET+1]);
+    }
+
+    /**
+     * Check if the internal charger is present and powered.
+     * @return True if present and powered.
+     */
+    public boolean internalChargerAvailable() {
+        return (currentSensorData[SENSOR_CHARGING_SOURCES_OFFSET] & SENSOR_CHARGER_INTERNAL_MASK) != 0;
+    }
+
+    /**
+     * Check if the homebase charger is present and powered.
+     * @return True if present and powered.
+     */
+    public boolean homebaseChargerAvailable() {
+        return (currentSensorData[SENSOR_CHARGING_SOURCES_OFFSET] & SENSOR_CHARGER_HOMEBASE_MASK) != 0;
+    }
+
+    /**
+     * Get the current OI mode.
+     * <p>OI modes:</p>
+     * <ul>
+     *     <li>0 = Off</li>
+     *     <li>1 = Passive</li>
+     *     <li>2 = Safe</li>
+     *     <li>3 = Full</li>
+     * </ul>
+     * @return Current OI mode (0-3)
+     */
+    public int mode() {
+        return currentSensorData[SENSOR_OI_MODE_OFFSET];
+    }
+
+    /**
+     * Get the currently selected song.
+     * @return Selected song number (0-15)
+     */
+    public int songNumber() {
+        return currentSensorData[SENSOR_SONG_NUMBER_OFFSET];
+    }
+
+    /**
+     * Check if a song is playing.
+     * @return True if a song is playing.
+     */
+    public boolean songPlaying() {
+        return currentSensorData[SENSOR_SONG_PLAYING_OFFSET] != 0;
+    }
+
+    /**
+     * Get the velocity most recently requested with a Drive command.
+     * @return Requested velocity (-500 - 500mm/s)
+     */
+    public int requestedVelocity() {
+        return signed16BitToInt(currentSensorData[SENSOR_REQUESTED_VELOCITY_OFFSET],
+                currentSensorData[SENSOR_REQUESTED_VELOCITY_OFFSET+1]);
+    }
+
+    /**
+     * Get the radius most recently requested with a Drive command.
+     * @return Requested radius (-32768 - 32767mm)
+     */
+    public int requestedRadius() {
+        return signed16BitToInt(currentSensorData[SENSOR_REQUESTED_RADIUS_OFFSET],
+                currentSensorData[SENSOR_REQUESTED_RADIUS_OFFSET+1]);
+    }
+
+    /**
+     * Get the right wheel velocity most recently requested with a Drive Direct command.
+     * @return Requested right wheel velocity (-500 - 500mm/s)
+     */
+    public int requestedVelocityRight() {
+        return signed16BitToInt(currentSensorData[SENSOR_REQUESTED_RIGHT_VELOCITY_OFFSET],
+                currentSensorData[SENSOR_REQUESTED_RIGHT_VELOCITY_OFFSET+1]);
+    }
+
+    /**
+     * Get the left wheel velocity most recently requested with a Drive Direct command.
+     * @return Requested left wheel velocity (-500 - 500mm/s)
+     */
+    public int requestedVelocityLeft() {
+        return signed16BitToInt(currentSensorData[SENSOR_REQUESTED_LEFT_VELOCITY_OFFSET],
+                currentSensorData[SENSOR_REQUESTED_LEFT_VELOCITY_OFFSET+1]);
+    }
+
+    /**
+     * Get the (cumulative) number of raw left encoder counts.
+     * <p>Note: This number will roll over to 0 after it passes 35535.</p>
+     * @return Cumulative left encoder counts (0-35535)
+     */
+    public int encoderCountsLeft() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_LEFT_ENCODER_COUNTS_OFFSET],
+                currentSensorData[SENSOR_LEFT_ENCODER_COUNTS_OFFSET+1]);
+    }
+
+    /**
+     * Get the (cumulative) number of raw right encoder counts.
+     * <p>Note: This number will roll over to 0 after it passes 35535.</p>
+     * @return Cumulative right encoder counts (0-35535)
+     */
+    public int encoderCountsRight() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_RIGHT_ENCODER_COUNTS_OFFSET],
+                currentSensorData[SENSOR_RIGHT_ENCODER_COUNTS_OFFSET+1]);
+    }
+
+    /**
+     * Check if the left light bumper detects an obstacle.
+     * @return True on obstacle
+     */
+    public boolean lightBumperLeft() {
+        return (currentSensorData[SENSOR_LIGHT_BUMPER_OFFSET] & SENSOR_LIGHT_BUMPER_LEFT_MASK) != 0;
+    }
+
+    /**
+     * Check if the front left light bumper detects an obstacle.
+     * @return True on obstacle
+     */
+    public boolean lightBumperFrontLeft() {
+        return (currentSensorData[SENSOR_LIGHT_BUMPER_OFFSET] & SENSOR_LIGHT_BUMPER_FRONT_LEFT_MASK) != 0;
+    }
+
+    /**
+     * Check if the center left light bumper detects an obstacle.
+     * @return True on obstacle
+     */
+    public boolean lightBumperCenterLeft() {
+        return (currentSensorData[SENSOR_LIGHT_BUMPER_OFFSET] & SENSOR_LIGHT_BUMPER_CENTER_LEFT_MASK) != 0;
+    }
+
+    /**
+     * Check if the center right light bumper detects an obstacle.
+     * @return True on obstacle
+     */
+    public boolean lightBumperCenterRight() {
+        return (currentSensorData[SENSOR_LIGHT_BUMPER_OFFSET] & SENSOR_LIGHT_BUMPER_CENTER_RIGHT_MASK) != 0;
+    }
+
+    /**
+     * Check if the front right light bumper detects an obstacle.
+     * @return True on obstacle
+     */
+    public boolean lightBumperFrontRight() {
+        return (currentSensorData[SENSOR_LIGHT_BUMPER_OFFSET] & SENSOR_LIGHT_BUMPER_FRONT_RIGHT_MASK) != 0;
+    }
+
+    /**
+     * Check if the right light bumper detects an obstacle.
+     * @return True on obstacle
+     */
+    public boolean lightBumperRight() {
+        return (currentSensorData[SENSOR_LIGHT_BUMPER_OFFSET] & SENSOR_LIGHT_BUMPER_RIGHT_MASK) != 0;
+    }
+
+    /**
+     * Get the strength of the light bumper left signal.
+     * @return Signal strength (0-4095)
+     */
+    public int lightBumperSignalLeft() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_LIGHT_BUMPER_LEFT_SIGNAL_OFFSET],
+                currentSensorData[SENSOR_LIGHT_BUMPER_LEFT_SIGNAL_OFFSET+1]);
+    }
+
+    /**
+     * Get the strength of the light bumper front left signal.
+     * @return Signal strength (0-4095)
+     */
+    public int lightBumperSignalFrontLeft() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_LIGHT_BUMPER_FRONT_LEFT_SIGNAL_OFFSET],
+                currentSensorData[SENSOR_LIGHT_BUMPER_FRONT_LEFT_SIGNAL_OFFSET+1]);
+    }
+
+    /**
+     * Get the strength of the light bumper center left signal.
+     * @return Signal strength (0-4095)
+     */
+    public int lightBumperSignalCenterLeft() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_LIGHT_BUMPER_CENTER_LEFT_SIGNAL_OFFSET],
+                currentSensorData[SENSOR_LIGHT_BUMPER_CENTER_LEFT_SIGNAL_OFFSET+1]);
+    }
+
+    /**
+     * Get the strength of the light bumper center right signal.
+     * @return Signal strength (0-4095)
+     */
+    public int lightBumperSignalCenterRight() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_LIGHT_BUMPER_CENTER_RIGHT_SIGNAL_OFFSET],
+                currentSensorData[SENSOR_LIGHT_BUMPER_CENTER_RIGHT_SIGNAL_OFFSET+1]);
+    }
+
+    /**
+     * Get the strength of the light bumper front right signal.
+     * @return Signal strength (0-4095)
+     */
+    public int lightBumperSignalFrontRight() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_LIGHT_BUMPER_FRONT_RIGHT_SIGNAL_OFFSET],
+                currentSensorData[SENSOR_LIGHT_BUMPER_FRONT_RIGHT_SIGNAL_OFFSET+1]);
+    }
+
+    /**
+     * Get the strength of the light bumper right signal.
+     * @return Signal strength (0-4095)
+     */
+    public int lightBumperSignalRight() {
+        return unsigned16BitToInt(currentSensorData[SENSOR_LIGHT_BUMPER_RIGHT_SIGNAL_OFFSET],
+                currentSensorData[SENSOR_LIGHT_BUMPER_RIGHT_SIGNAL_OFFSET+1]);
+    }
+
+    /**
+     * Get the current being drawn by the left wheel motor in milli Ampere (mA).
+     * @return Motor current in mA (-32768 - 32767 mA)
+     */
+    public int motorCurrentLeft() {
+        return signed16BitToInt(currentSensorData[SENSOR_LEFT_MOTOR_CURRENT],
+                currentSensorData[SENSOR_LEFT_MOTOR_CURRENT+1]);
+    }
+
+    /**
+     * Get the current being drawn by the right wheel motor in milli Ampere (mA).
+     * @return Motor current in mA (-32768 - 32767 mA)
+     */
+    public int motorCurrentRight() {
+        return signed16BitToInt(currentSensorData[SENSOR_RIGHT_MOTOR_CURRENT],
+                currentSensorData[SENSOR_RIGHT_MOTOR_CURRENT+1]);
+    }
+
+    /**
+     * Get the current being drawn by the main brush motor in milli Ampere (mA).
+     * @return Motor current in mA (-32768 - 32767 mA)
+     */
+    public int motorCurrentMainBrush() {
+        return signed16BitToInt(currentSensorData[SENSOR_MAIN_BRUSH_CURRENT],
+                currentSensorData[SENSOR_MAIN_BRUSH_CURRENT+1]);
+    }
+
+    /**
+     * Get the current being drawn by the side brush motor in milli Ampere (mA).
+     * @return Motor current in mA (-32768 - 32767 mA)
+     */
+    public int motorCurrentSideBrush() {
+        return signed16BitToInt(currentSensorData[SENSOR_SIDE_BRUSH_CURRENT],
+                currentSensorData[SENSOR_SIDE_BRUSH_CURRENT+1]);
+    }
+
+    /**
+     * Check if the roomba is making forward progress.
+     * <p>Note: this method returns false when the roomba is turning, driving backward,
+     * or is not driving.</p>
+     * @return True if making forward progress
+     */
+    public boolean stasis() {
+        return currentSensorData[SENSOR_STASIS] != 0;
+    }
+
+    //endregion
+
     //region Class helpers
 
     /**
@@ -602,6 +1238,14 @@ public abstract class RoombaJSSC {
                 && c != 42          // Not *
                 && c != 43          // Not +
                 && c != 64;         // Not @
+    }
+
+    private int signed16BitToInt(byte highByte, byte lowByte) {
+        return lowByte & 0xff | (short) (highByte << 8);
+    }
+
+    private int unsigned16BitToInt(byte highByte, byte lowByte) {
+        return ((highByte & 0xff) << 8) | (lowByte & 0xff);
     }
 
     //endregion
@@ -627,9 +1271,6 @@ public abstract class RoombaJSSC {
     private static final int OPC_PWM_MOTORS         = 144;
     private static final int OPC_DRIVE_WHEELS       = 145;
     private static final int OPC_DRIVE_PWM          = 146;
-    private static final int OPC_STREAM             = 148;
-    private static final int OPC_QUERY_LIST         = 149;
-    private static final int OPC_DO_STREAM          = 150;
     private static final int OPC_SCHEDULING_LEDS    = 162;
     private static final int OPC_DIGIT_LEDS_ASCII   = 164;
     private static final int OPC_BUTTONS            = 165;
@@ -637,14 +1278,88 @@ public abstract class RoombaJSSC {
     private static final int OPC_SET_DAYTIME        = 168;
     private static final int OPC_STOP               = 173;
 
+    // Sensor packets Group packet ID
+    private static final int SENSOR_PACKET_ALL      = 100;
+
+    // Sensor bytes offset
+    private static final int SENSOR_BUMPS_WHEELDROPS_OFFSET                 = 0;
+    private static final int SENSOR_WALL_OFFSET                             = 1;
+    private static final int SENSOR_CLIFF_LEFT_OFFSET                       = 2;
+    private static final int SENSOR_CLIFF_FRONT_LEFT_OFFSET                 = 3;
+    private static final int SENSOR_CLIFF_FRONT_RIGHT_OFFSET                = 4;
+    private static final int SENSOR_CLIFF_RIGHT_OFFSET                      = 5;
+    private static final int SENSOR_VIRTUAL_WALL_OFFSET                     = 6;
+    private static final int SENSOR_WHEEL_OVERCURRENT_OFFSET                = 7;
+    private static final int SENSOR_DIRT_DETECT_OFFSET                      = 8;
+    private static final int SENSOR_INFRARED_CHAR_OMNI_OFFSET               = 9;
+    private static final int SENSOR_BUTTONS_OFFSET                          = 11;
+    private static final int SENSOR_DISTANCE_OFFSET                         = 12;
+    private static final int SENSOR_ANGLE_OFFSET                            = 14;
+    private static final int SENSOR_CHARGING_STATE_OFFSET                   = 16;
+    private static final int SENSOR_VOLTAGE_OFFSET                          = 17;
+    private static final int SENSOR_CURRENT_OFFSET                          = 19;
+    private static final int SENSOR_TEMPERATURE_OFFSET                      = 21;
+    private static final int SENSOR_BATTERY_CHARGE_OFFSET                   = 22;
+    private static final int SENSOR_BATTERY_CAPACITY_OFFSET                 = 24;
+    private static final int SENSOR_WALL_SIGNAL_OFFSET                      = 26;
+    private static final int SENSOR_CLIFF_LEFT_SIGNAL_OFFSET                = 28;
+    private static final int SENSOR_CLIFF_FRONT_LEFT_SIGNAL_OFFSET          = 30;
+    private static final int SENSOR_CLIFF_FRONT_RIGHT_SIGNAL_OFFSET         = 32;
+    private static final int SENSOR_CLIFF_RIGHT_SIGNAL_OFFSET               = 34;
+    private static final int SENSOR_CHARGING_SOURCES_OFFSET                 = 39;
+    private static final int SENSOR_OI_MODE_OFFSET                          = 40;
+    private static final int SENSOR_SONG_NUMBER_OFFSET                      = 41;
+    private static final int SENSOR_SONG_PLAYING_OFFSET                     = 42;
+    private static final int SENSOR_REQUESTED_VELOCITY_OFFSET               = 44;
+    private static final int SENSOR_REQUESTED_RADIUS_OFFSET                 = 46;
+    private static final int SENSOR_REQUESTED_RIGHT_VELOCITY_OFFSET         = 48;
+    private static final int SENSOR_REQUESTED_LEFT_VELOCITY_OFFSET          = 50;
+    private static final int SENSOR_LEFT_ENCODER_COUNTS_OFFSET              = 52;
+    private static final int SENSOR_RIGHT_ENCODER_COUNTS_OFFSET             = 54;
+    private static final int SENSOR_LIGHT_BUMPER_OFFSET                     = 56;
+    private static final int SENSOR_LIGHT_BUMPER_LEFT_SIGNAL_OFFSET         = 57;
+    private static final int SENSOR_LIGHT_BUMPER_FRONT_LEFT_SIGNAL_OFFSET   = 59;
+    private static final int SENSOR_LIGHT_BUMPER_CENTER_LEFT_SIGNAL_OFFSET  = 61;
+    private static final int SENSOR_LIGHT_BUMPER_CENTER_RIGHT_SIGNAL_OFFSET = 63;
+    private static final int SENSOR_LIGHT_BUMPER_FRONT_RIGHT_SIGNAL_OFFSET  = 65;
+    private static final int SENSOR_LIGHT_BUMPER_RIGHT_SIGNAL_OFFSET        = 67;
+    private static final int SENSOR_INFRARED_CHAR_LEFT_OFFSET               = 69;
+    private static final int SENSOR_INFRARED_CHAR_RIGHT_OFFSET              = 70;
+    private static final int SENSOR_LEFT_MOTOR_CURRENT                      = 71;
+    private static final int SENSOR_RIGHT_MOTOR_CURRENT                     = 73;
+    private static final int SENSOR_MAIN_BRUSH_CURRENT                      = 75;
+    private static final int SENSOR_SIDE_BRUSH_CURRENT                      = 77;
+    private static final int SENSOR_STASIS                                  = 79;
+
+    // Sensor data bitmask
+    private static final int SENSOR_BUMP_RIGHT_MASK         = 0x1;
+    private static final int SENSOR_BUMP_LEFT_MASK          = 0x2;
+    private static final int SENSOR_WHEELDROP_RIGHT_MASK    = 0x4;
+    private static final int SENSOR_WHEELDROP_LEFT_MASK     = 0x8;
+
+    private static final int SENSOR_OVERCURRENT_SIDE_BRUSH_MASK     = 0x1;
+    private static final int SENSOR_OVERCURRENT_MAIN_BRUSH_MASK     = 0x4;
+    private static final int SENSOR_OVERCURRENT_RIGHT_WHEEL_MASK    = 0x8;
+    private static final int SENSOR_OVERCURRENT_LEFT_WHEEL_MASK     = 0x10;
+
+    private static final int SENSOR_CHARGER_INTERNAL_MASK = 0x1;
+    private static final int SENSOR_CHARGER_HOMEBASE_MASK = 0x2;
+
+    private static final int SENSOR_LIGHT_BUMPER_LEFT_MASK          = 0x1;
+    private static final int SENSOR_LIGHT_BUMPER_FRONT_LEFT_MASK    = 0x2;
+    private static final int SENSOR_LIGHT_BUMPER_CENTER_LEFT_MASK   = 0x4;
+    private static final int SENSOR_LIGHT_BUMPER_CENTER_RIGHT_MASK  = 0x8;
+    private static final int SENSOR_LIGHT_BUMPER_FRONT_RIGHT_MASK   = 0x10;
+    private static final int SENSOR_LIGHT_BUMPER_RIGHT_MASK         = 0x20;
+
     // Scheduling bitmask
-    private static final int SCHEDULE_SUNDAY_MASK   = 0x1;
-    private static final int SCHEDULE_MONDAY_MASK   = 0x2;
-    private static final int SCHEDULE_TUESDAY_MASK  = 0x4;
-    private static final int SCHEDULE_WEDNESDAY_MASK= 0x8;
-    private static final int SCHEDULE_THURSDAY_MASK = 0x10;
-    private static final int SCHEDULE_FRIDAY_MASK   = 0x20;
-    private static final int SCHEDULE_SATURDAY_MASK = 0x40;
+    private static final int SCHEDULE_SUNDAY_MASK       = 0x1;
+    private static final int SCHEDULE_MONDAY_MASK       = 0x2;
+    private static final int SCHEDULE_TUESDAY_MASK      = 0x4;
+    private static final int SCHEDULE_WEDNESDAY_MASK    = 0x8;
+    private static final int SCHEDULE_THURSDAY_MASK     = 0x10;
+    private static final int SCHEDULE_FRIDAY_MASK       = 0x20;
+    private static final int SCHEDULE_SATURDAY_MASK     = 0x40;
 
     // Motors bitmask
     private static final int MOTORS_SIDE_BRUSH_MASK     = 0x1;

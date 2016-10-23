@@ -30,20 +30,17 @@
 
 package com.maschel.roomba;
 
-import jssc.SerialPort;
-import jssc.SerialPortException;
-import jssc.SerialPortList;
+import jssc.*;
 
 /**
  * RoombaJSSC implementation, this class contains all the serial library
  * dependent code.
  */
-public class RoombaJSSCSerial extends RoombaJSSC {
+public class RoombaJSSCSerial extends RoombaJSSC implements SerialPortEventListener {
 
     public SerialPort serialPort;
 
     private String portName = null;
-
 
     /**
      * Get the list of available serial ports.
@@ -81,6 +78,7 @@ public class RoombaJSSCSerial extends RoombaJSSC {
         } catch (SerialPortException ex) {
             log.error("Failed to close serial port: '" + portName + "', error: " + ex.getMessage());
         }
+        connected = false;
         serialPort = null;
     }
 
@@ -90,15 +88,19 @@ public class RoombaJSSCSerial extends RoombaJSSC {
      * @return True on success, False on failure.
      */
     public boolean send(byte[] bytes) {
-        try {
-            log.debug("Sending byte array, of size: '" + bytes.length + "' to serial port.");
-            serialPort.writeBytes(bytes);
-            return true;
-        } catch(SerialPortException ex) {
-            log.error("Failed to send data to serial port, error: " + ex.getMessage());
+        if (connected) {
+            try {
+                log.debug("Sending byte array, of size: '" + bytes.length + "' to serial port.");
+                serialPort.writeBytes(bytes);
+                return true;
+            } catch (SerialPortException ex) {
+                log.error("Failed to send data to serial port, error: " + ex.getMessage());
+                return false;
+            }
+        } else {
+            log.error("Serial port not connected, use connect() first.");
             return false;
         }
-
     }
 
     /**
@@ -107,12 +109,17 @@ public class RoombaJSSCSerial extends RoombaJSSC {
      * @return True on success, False on failure.
      */
     public boolean send(int b) {
-        try {
-            log.debug("Sending data: '" + b + "' to serial port.");
-            serialPort.writeInt(b);
-            return true;
-        } catch (SerialPortException ex) {
-            log.error("Failed to send data to serial port, error: " + ex.getMessage());
+        if (connected) {
+            try {
+                log.debug("Sending data: '" + b + "' to serial port.");
+                serialPort.writeInt(b);
+                return true;
+            } catch (SerialPortException ex) {
+                log.error("Failed to send data to serial port, error: " + ex.getMessage());
+                return false;
+            }
+        } else {
+            log.error("Serial port not connected, use connect() first.");
             return false;
         }
     }
@@ -150,7 +157,8 @@ public class RoombaJSSCSerial extends RoombaJSSC {
 
                 serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_NONE);
 
-                // TODO: Add some event listeners
+                // Listen for incoming data
+                serialPort.addEventListener(this);
 
                 log.info("Successfully opened serial port.");
                 return success;
@@ -164,6 +172,24 @@ public class RoombaJSSCSerial extends RoombaJSSC {
         } else {
             log.error("Port: '" + portName + "' does not exist.");
             return false;
+        }
+    }
+
+    public void serialEvent(SerialPortEvent serialPortEvent) {
+        if (serialPortEvent.isRXCHAR()) {
+            try {
+                byte[] data = serialPort.readBytes();
+                for(byte b: data) {
+                    sensorDataBuffer[sensorDataBufferIndex++] = b;
+                    if (sensorDataBufferIndex == 80) {
+                        log.debug("Received sensor data packet.");
+                        currentSensorData = sensorDataBuffer;
+                        sensorDataBufferIndex = 0;
+                    }
+                }
+            } catch (SerialPortException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 }
