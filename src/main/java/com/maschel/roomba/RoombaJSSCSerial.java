@@ -181,7 +181,7 @@ public class RoombaJSSCSerial extends RoombaJSSC implements SerialPortEventListe
                 byte[] data = serialPort.readBytes();
                 for(byte b: data) {
                     sensorDataBuffer[sensorDataBufferIndex++] = b;
-                    if (sensorDataBufferIndex == 80) {
+                    if (sensorDataBufferIndex == SENSOR_PACKET_ALL_SIZE) {
                         log.debug("Received sensor data packet.");
                         currentSensorData = sensorDataBuffer;
                         sensorDataBufferIndex = 0;

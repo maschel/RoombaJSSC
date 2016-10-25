@@ -77,9 +77,9 @@ public abstract class RoombaJSSC {
 
     boolean connected = false;
 
-    byte[] sensorDataBuffer = new byte[80];
+    byte[] currentSensorData = new byte[SENSOR_PACKET_ALL_SIZE];
+    byte[] sensorDataBuffer = new byte[SENSOR_PACKET_ALL_SIZE];
     int sensorDataBufferIndex = 0;
-    byte[] currentSensorData = new byte[80];
 
     private long lastSensorUpdate = 0;
 
@@ -747,7 +747,7 @@ public abstract class RoombaJSSC {
      * @return Dirt level (0-255)
      */
     public int dirtDetectLevel() {
-        return currentSensorData[SENSOR_DIRT_DETECT_OFFSET];
+        return currentSensorData[SENSOR_DIRT_DETECT_OFFSET] & 0xff;
     }
 
     /**
@@ -755,7 +755,7 @@ public abstract class RoombaJSSC {
      * @return Received character (0-255)
      */
     public int infraredCharacterOmni() {
-        return currentSensorData[SENSOR_INFRARED_CHAR_OMNI_OFFSET];
+        return currentSensorData[SENSOR_INFRARED_CHAR_OMNI_OFFSET] & 0xff;
     }
 
     /**
@@ -763,7 +763,7 @@ public abstract class RoombaJSSC {
      * @return Received character (0-255)
      */
     public int infraredCharacterLeft() {
-        return currentSensorData[SENSOR_INFRARED_CHAR_LEFT_OFFSET];
+        return currentSensorData[SENSOR_INFRARED_CHAR_LEFT_OFFSET] & 0xff;
     }
 
     /**
@@ -771,7 +771,7 @@ public abstract class RoombaJSSC {
      * @return Received character (0-225)
      */
     public int infraredCharacterRight() {
-        return currentSensorData[SENSOR_INFRARED_CHAR_RIGHT_OFFSET];
+        return currentSensorData[SENSOR_INFRARED_CHAR_RIGHT_OFFSET] & 0xff;
     }
 
     /**
@@ -1051,7 +1051,7 @@ public abstract class RoombaJSSC {
     /**
      * Get the (cumulative) number of raw left encoder counts.
      * <p>Note: This number will roll over to 0 after it passes 35535.</p>
-     * @return Cumulative left encoder counts (0-35535)
+     * @return Cumulative left encoder counts (0-65535)
      */
     public int encoderCountsLeft() {
         return unsigned16BitToInt(currentSensorData[SENSOR_LEFT_ENCODER_COUNTS_OFFSET],
@@ -1061,7 +1061,7 @@ public abstract class RoombaJSSC {
     /**
      * Get the (cumulative) number of raw right encoder counts.
      * <p>Note: This number will roll over to 0 after it passes 35535.</p>
-     * @return Cumulative right encoder counts (0-35535)
+     * @return Cumulative right encoder counts (0-65535)
      */
     public int encoderCountsRight() {
         return unsigned16BitToInt(currentSensorData[SENSOR_RIGHT_ENCODER_COUNTS_OFFSET],
@@ -1280,6 +1280,7 @@ public abstract class RoombaJSSC {
 
     // Sensor packets Group packet ID
     private static final int SENSOR_PACKET_ALL      = 100;
+    static final int SENSOR_PACKET_ALL_SIZE         = 80;
 
     // Sensor bytes offset
     private static final int SENSOR_BUMPS_WHEELDROPS_OFFSET                 = 0;

@@ -30,11 +30,15 @@
 
 package com.maschel.roomba;
 
+import jssc.SerialPort;
+import jssc.SerialPortEvent;
 import jssc.SerialPortException;
 import jssc.SerialPortList;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -128,5 +132,65 @@ public class RoombaJSSCSerialTest extends RoombaJSSCTestSuite
         // Throw Exception
         Mockito.when(serialPort.writeBytes(Matchers.any(byte[].class))).thenThrow(mockSerialPortException);
         assertFalse("send(byte[]) should return False on failed send", roombaSerial.send(bytes));
+    }
+
+    /**
+     * Test if the serialEvent method processes the incoming serial (sensor) data as expected.
+     * The event handler should write all incoming data to the sensorDataBuffer, until a all the
+     * packets are received (80 bytes) then the buffer should be copied to the currentSensorData array.
+     * @throws SerialPortException
+     */
+    @Test
+    public void testSerialEventProcessing() throws SerialPortException {
+        roombaSerial.connect(SERIAL_PORT);
+        // Devide the input in multiple arrays to simulate serial input delay
+        final int byte_array_length = 20; // SENSOR_PACKET_ALL_SIZE (80) / 4 data packets = 20 bytes per array
+        byte[] bytes0 = new byte[byte_array_length];
+        byte[] bytes1 = new byte[byte_array_length];
+        byte[] bytes2 = new byte[byte_array_length];
+        byte[] bytes3 = new byte[byte_array_length];
+        for (int i=0; i < byte_array_length; i++) {
+            // Set to some distinguishable values
+            bytes0[i] = (byte)0x1f;
+            bytes1[i] = (byte)0x3f;
+            bytes2[i] = (byte)0x7f;
+            bytes3[i] = (byte)0xff;
+        }
+        // Initialize the buffer
+        roombaSerial.sensorDataBuffer = new byte[80];
+        // Create expected buffer
+        byte[] expect_buffer = new byte[80];
+        // Create a mock RXCHAR serialPortEvent of byte_array_length bytes
+        SerialPortEvent serialPortEvent = new SerialPortEvent(SERIAL_PORT, SerialPort.MASK_RXCHAR, byte_array_length);
+
+        // Check if 0-20 bytes are written to the buffer
+        System.arraycopy(bytes0, 0, expect_buffer, 0, byte_array_length);
+        Mockito.when(serialPort.readBytes()).thenReturn(bytes0);
+        roombaSerial.serialEvent(serialPortEvent);
+        assertArrayEquals(roombaSerial.sensorDataBuffer, expect_buffer);
+        assertEquals(roombaSerial.sensorDataBufferIndex, 20);
+
+        // Check if 20-40 bytes are written to the buffer
+        System.arraycopy(bytes1, 0, expect_buffer, byte_array_length, byte_array_length);
+        Mockito.when(serialPort.readBytes()).thenReturn(bytes1);
+        roombaSerial.serialEvent(serialPortEvent);
+        assertArrayEquals(roombaSerial.sensorDataBuffer, expect_buffer);
+        assertEquals(roombaSerial.sensorDataBufferIndex, 40);
+
+        // Check if 40-60 bytes are written to the buffer
+        System.arraycopy(bytes2, 0, expect_buffer, byte_array_length*2, byte_array_length);
+        Mockito.when(serialPort.readBytes()).thenReturn(bytes2);
+        roombaSerial.serialEvent(serialPortEvent);
+        assertArrayEquals(roombaSerial.sensorDataBuffer, expect_buffer);
+        assertEquals(roombaSerial.sensorDataBufferIndex, 60);
+
+        // Check if 60-80 bytes are written to the buffer, the buffer is copied to
+        // the currentSensorData array and the sensorDataBufferIndex is reset to 0.
+        System.arraycopy(bytes3, 0, expect_buffer, byte_array_length*3, byte_array_length);
+        Mockito.when(serialPort.readBytes()).thenReturn(bytes3);
+        roombaSerial.serialEvent(serialPortEvent);
+        assertArrayEquals(roombaSerial.sensorDataBuffer, expect_buffer);
+        assertArrayEquals(roombaSerial.currentSensorData, expect_buffer);
+        assertEquals(roombaSerial.sensorDataBufferIndex, 0);
     }
 }
