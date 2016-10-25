@@ -23,7 +23,7 @@ String[] ports = roomba.portList();
 roomba.connect("/dev/a/serial/port"); // Use portList() to get available ports.
 
 // Make roomba ready for communication & control (safe mode)
-roomba.startUp();
+roomba.startup();
 
 // Send commands
 roomba.clean(); // Roomba will start cleaning
