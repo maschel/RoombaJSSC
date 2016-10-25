@@ -48,18 +48,18 @@ roomba.disconnect();
 ```
 
 ## Table of contents
-* [Roomba commands]{#roomba-commands}
-    * [Power commands]{#power-commands}
-    * [Mode commands]{#mode-commands}
-    * [Cleaning commands]{#cleaning-commands}
-    * [Actuator commands]{#actuator-commands}
-* [Roomba songs]{#roomba-songs}
-    * [Create song example]{#create-song-example}
-    * [Song commands]{#song-commands}
-* [Sensors]{#sensors}
-    * [Sensor commands]{#sensor-commands}
-    * [Sensor values]{#sensor-values}
-* [License]{#license}
+* [Roomba commands](#roomba-commands)
+    * [Power commands](#power-commands)
+    * [Mode commands](#mode-commands)
+    * [Cleaning commands](#cleaning-commands)
+    * [Actuator commands](#actuator-commands)
+* [Roomba songs](#roomba-songs)
+    * [Create song example](#create-song-example)
+    * [Song commands](#song-commands)
+* [Sensors](#sensors)
+    * [Sensor commands](#sensor-commands)
+    * [Sensor values](#sensor-values)
+* [License](#license)
 
     
 
@@ -96,8 +96,6 @@ This command resets the Roomba, as if you had removed and reinserted the battery
 Note: Wait at least 5000ms before sending any commands.
 
 ### Mode commands
-
-#### SafeMode
 
 #### `public void safeMode()`
 
@@ -783,5 +781,4 @@ Note: this method returns false when the roomba is turning, driving backward, or
  * **Returns:** True if making forward progress
  
 ## License
-#### MIT LICENSE
-[Full license](./blob/master/LICENSE)
+[MIT LICENSE](./LICENSE) - Copyright (c) 2016 Geoffrey Mastenbroek
