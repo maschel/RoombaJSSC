@@ -22,7 +22,7 @@ This library implements (basically) all the commands and sensors specified in th
 <dependency>
     <groupId>com.maschel</groupId>
     <artifactId>roombajssc</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
@@ -683,7 +683,7 @@ Get the left wheel velocity most recently requested with a Drive Direct command.
 
 Get the (cumulative) number of raw left encoder counts.
 
-Note: This number will roll over to 0 after it passes 35535.
+Note: This number will roll over to 0 after it passes 65535.
 
  * **Returns:** Cumulative left encoder counts (0-65535)
 
@@ -691,7 +691,7 @@ Note: This number will roll over to 0 after it passes 35535.
 
 Get the (cumulative) number of raw right encoder counts.
 
-Note: This number will roll over to 0 after it passes 35535.
+Note: This number will roll over to 0 after it passes 65535.
 
  * **Returns:** Cumulative right encoder counts (0-65535)
 
