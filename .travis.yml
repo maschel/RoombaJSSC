@@ -1,0 +1,27 @@
+language: java
+jdk:
+  - oraclejdk8
+  - oraclejdk7
+  - openjdk7
+install:
+  - mvn --settings .travis/settings.xml install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
+before_install:
+  - echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import
+  - echo $GPG_OWNERTRUST | base64 --decode | $GPG_EXECUTABLE --import-ownertrust
+after_success:
+  - mvn clean cobertura:cobertura coveralls:report
+deploy:
+  -
+    provider: script
+    script: .travis/deploy.sh
+    on:
+      repo: maschel/RoombaJSSC
+      branch: master
+      jdk: oraclejdk8
+  -
+    provider: script
+    script: .travis/deploy.sh
+    on:
+      repo: maschel/RoombaJSSC
+      tags: true
+      jdk: oraclejdk8

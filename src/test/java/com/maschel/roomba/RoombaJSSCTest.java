@@ -729,10 +729,10 @@ public class RoombaJSSCTest extends RoombaJSSCTestSuite
             tooManyNotes[i] = new RoombaSongNote(RoombaNote.A0, RoombaNoteDuration.EightNote);
         }
         assertTrue(assertSongArgumentValidation(0, new RoombaSongNote[]{}, 60));    // Success
-        assertTrue(assertSongArgumentValidation(4, maxNotes, 800));                 // Success
+        assertTrue(assertSongArgumentValidation(15, maxNotes, 800));                 // Success
         assertFalse(assertSongArgumentValidation(-1, new RoombaSongNote[]{}, 60));  // Fail
         assertFalse(assertSongArgumentValidation(0, new RoombaSongNote[]{}, 59));   // Fail
-        assertFalse(assertSongArgumentValidation(5, new RoombaSongNote[]{}, 60));   // Fail
+        assertFalse(assertSongArgumentValidation(16, new RoombaSongNote[]{}, 60));   // Fail
         assertFalse(assertSongArgumentValidation(0, tooManyNotes, 60));             // Fail
         assertFalse(assertSongArgumentValidation(0, new RoombaSongNote[]{}, 801));  // Fail
     }
@@ -774,9 +774,9 @@ public class RoombaJSSCTest extends RoombaJSSCTestSuite
     @Test
     public void testPlayArgumentValidation() {
         assertTrue(assertPlayArgumentValidation(0));    // Success
-        assertTrue(assertPlayArgumentValidation(4));    // Success
+        assertTrue(assertPlayArgumentValidation(15));    // Success
         assertFalse(assertPlayArgumentValidation(-1));  // Fail
-        assertFalse(assertPlayArgumentValidation(5));   // Fail
+        assertFalse(assertPlayArgumentValidation(16));   // Fail
     }
 
     // Helper method for testLedsArgumentValidation that checks input arguments

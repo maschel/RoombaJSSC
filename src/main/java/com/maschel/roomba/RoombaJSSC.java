@@ -557,7 +557,7 @@ public abstract class RoombaJSSC {
      * This command lets you specify up to four songs to the OI that you can play at a later time.
      * Each song is associated with a song number. The Play command uses the song number to identify your
      * song selection. Each song can contain up to sixteen notes.
-     * @param songNumber Song number (0-4)
+     * @param songNumber Song number (0-15)
      * @param notes Array of RoombaSongNote (max. 16)
      * @param tempo Tempo in BPM (min. 60 BPM, max. 800 BPM)
      * @throws IllegalArgumentException One of the arguments is out of bounds.
@@ -565,8 +565,8 @@ public abstract class RoombaJSSC {
     public void song(int songNumber, RoombaSongNote[] notes, int tempo) throws IllegalArgumentException {
 
         // Validate argument values
-        if (songNumber < 0 || songNumber > 4)
-            throw new IllegalArgumentException("Song number should be between 0 and 4");
+        if (songNumber < 0 || songNumber > 15)
+            throw new IllegalArgumentException("Song number should be between 0 and 15");
         if (notes.length > 16)
             throw new IllegalArgumentException("Songs have a maximum of 16 notes");
         if (tempo < 60 || tempo > 800)
@@ -585,14 +585,14 @@ public abstract class RoombaJSSC {
     /**
      * This command lets you select a song to play from the songs added to Roomba using the Song command.
      * You must add one or more songs to Roomba using the Song command in order for the Play command to work.
-     * @param songNumber Song number (0-4)
+     * @param songNumber Song number (0-15)
      * @throws IllegalArgumentException One of the arguments is out of bounds.
      */
     public void play(int songNumber) throws IllegalArgumentException {
 
         // Validate argument values
-        if (songNumber < 0 || songNumber > 4)
-            throw new IllegalArgumentException("Song number should be between 0 and 4");
+        if (songNumber < 0 || songNumber > 15)
+            throw new IllegalArgumentException("Song number should be between 0 and 15");
 
         log.info("Sending 'play' command, song number: " + songNumber + " to roomba.");
         byte[] cmd = { (byte)OPC_PLAY, (byte)songNumber };
@@ -1050,7 +1050,7 @@ public abstract class RoombaJSSC {
 
     /**
      * Get the (cumulative) number of raw left encoder counts.
-     * <p>Note: This number will roll over to 0 after it passes 35535.</p>
+     * <p>Note: This number will roll over to 0 after it passes 65535.</p>
      * @return Cumulative left encoder counts (0-65535)
      */
     public int encoderCountsLeft() {
@@ -1060,7 +1060,7 @@ public abstract class RoombaJSSC {
 
     /**
      * Get the (cumulative) number of raw right encoder counts.
-     * <p>Note: This number will roll over to 0 after it passes 35535.</p>
+     * <p>Note: This number will roll over to 0 after it passes 65535.</p>
      * @return Cumulative right encoder counts (0-65535)
      */
     public int encoderCountsRight() {
