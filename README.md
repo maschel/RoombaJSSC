@@ -1,4 +1,8 @@
 # RoombaJSSC
+
+[![Build Status](https://travis-ci.org/maschel/RoombaJSSC.svg?branch=master)](https://travis-ci.org/maschel/RoombaJSSC) [![Coverage Status](https://coveralls.io/repos/github/maschel/RoombaJSSC/badge.svg?branch=master)](https://coveralls.io/github/maschel/RoombaJSSC?branch=master) [![Maven Central](https://img.shields.io/maven-central/v/com.maschel/roombajssc.svg)](https://maven-badges.herokuapp.com/maven-central/com.maschel/roombajssc) [![GitHub release](https://img.shields.io/github/release/maschel/roombajssc.svg)](https://github.com/maschel/RoombaJSSC/releases) [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/maschel/RoombaJSSC/blob/master/LICENSE)
+
+
 RoombaJSSC is a JAVA library to control and/or read sensor values of a Roomba (500 & 600 series).
 This library implements (basically) all the commands and sensors specified in the [iRobot Create 2 Open Interace Specification](http://www.irobot.com/~/media/MainSite/PDFs/About/STEM/Create/create_2_Open_Interface_Spec.pdf) based on Roomba 600.
 
@@ -10,6 +14,21 @@ This library implements (basically) all the commands and sensors specified in th
     * Solaris(x86, x86-64)
     * Mac OS X(x86, x86-64, PPC, PPC64)
 * JavaDoc on all methods describing commands & values as given in iRobot specifications.
+
+## How to install
+
+### Maven (recommended)
+```xml
+<dependency>
+    <groupId>com.maschel</groupId>
+    <artifactId>roombajssc</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+### Import jar in project
+You can download the (latest) releases here: [Github releases](https://github.com/maschel/RoombaJSSC/releases)
+
 
 ## Basic usage
 ### Standard library lifecycle
