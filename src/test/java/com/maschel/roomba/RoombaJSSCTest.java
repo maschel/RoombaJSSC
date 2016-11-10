@@ -843,6 +843,47 @@ public class RoombaJSSCTest extends RoombaJSSCTestSuite
     //region Roomba sensor value getters tests
 
     /**
+     * Test for correct return of safety fault
+     */
+    @Test
+    public void testSafetyFault() {
+        assertFalse("safetyFault() should return false on all sensors 0", roombaSerial.safetyFault());
+        // BumpRight
+        roombaSerial.currentSensorData[0] = 0x1;
+        assertTrue("safetyFault() should return true on bumpRight", roombaSerial.safetyFault());
+        // BumpLeft
+        roombaSerial.currentSensorData[0] = 0;
+        roombaSerial.currentSensorData[0] = 0x2;
+        assertTrue("safetyFault() should return true on bumpLeft", roombaSerial.safetyFault());
+        // WheelDropRight
+        roombaSerial.currentSensorData[0] = 0;
+        roombaSerial.currentSensorData[0] = 0x4;
+        assertTrue("safetyFault() should return true on wheelDropRight", roombaSerial.safetyFault());
+        // WheelDropLeft
+        roombaSerial.currentSensorData[0] = 0;
+        roombaSerial.currentSensorData[0] = 0x8;
+        assertTrue("safetyFault() should return true on wheelDropLeft", roombaSerial.safetyFault());
+        // CliffLeft
+        roombaSerial.currentSensorData[0] = 0;
+        roombaSerial.currentSensorData[2] = 0x1;
+        assertTrue("safetyFault() should return true on 1 cliffLeft", roombaSerial.safetyFault());
+        // CliffFrontLeft
+        roombaSerial.currentSensorData[2] = 0;
+        roombaSerial.currentSensorData[3] = 0x1;
+        assertTrue("safetyFault() should return true on 1 cliffFrontLeft", roombaSerial.safetyFault());
+        // CliffFrontRight
+        roombaSerial.currentSensorData[0] = 0;
+        roombaSerial.currentSensorData[3] = 0;
+        roombaSerial.currentSensorData[4] = 0x1;
+        assertTrue("safetyFault() should return true on 1 cliffFrontRight", roombaSerial.safetyFault());
+        // CliffRight
+        roombaSerial.currentSensorData[0] = 0;
+        roombaSerial.currentSensorData[4] = 0;
+        roombaSerial.currentSensorData[5] = 0x1;
+        assertTrue("safetyFault() should return true on 1 cliffRight", roombaSerial.safetyFault());
+    }
+
+    /**
      * Test for correct sensor byte read and method return
      */
     @Test

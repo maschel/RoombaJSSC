@@ -631,6 +631,14 @@ public abstract class RoombaJSSC {
     //region Roomba sensor value getters
 
     /**
+     * Check if a safety fault has occurred, this will put the roomba into passive mode.
+     * @return True if a safety fault has occurred
+     */
+    public boolean safetyFault() {
+        return bumpRight() || bumpLeft() || wheelDropRight() || wheelDropLeft() || cliffLeft() || cliffFrontLeft() || cliffFrontRight() || cliffRight();
+    }
+
+    /**
      * Get value of right bumper sensor.
      * @return True if bumped right
      */

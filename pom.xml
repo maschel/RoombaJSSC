@@ -4,7 +4,7 @@
 
     <groupId>com.maschel</groupId>
     <artifactId>roombajssc</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>RoombaJSSC</name>
