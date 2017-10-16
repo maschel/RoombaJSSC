@@ -448,7 +448,7 @@ public abstract class RoombaJSSC {
      *                       Intermediate values are intermediate intensities.
      * @throws IllegalArgumentException One of the arguments is out of bounds.
      */
-    public void leds(boolean debris, boolean spot, boolean dock, boolean check_robot, int powerColor,
+    public void relativeLeds(boolean debris, boolean spot, boolean dock, boolean check_robot, int powerColor,
                      int powerIntensity) throws IllegalArgumentException {
 
         // Validate argument values
@@ -458,12 +458,43 @@ public abstract class RoombaJSSC {
         log.info("Sending 'LEDs' command (debris: " + debris + ", spot: " + spot + ", dock: " + dock +
                 ", checkRobot: " + check_robot + ", powerRedColor: " + powerColor + ", powerIntensity: "
                 + powerIntensity + ") to roomba.");
+
         // Create LEDs byte
         byte LEDs = (byte)((debris?LEDS_DEBRIS_MASK:0) | (spot?LEDS_SPOT_MASK:0) | (dock?LEDS_DOCK_MASK:0) |
                             (check_robot?LEDS_CHECK_ROBOT_MASK:0));
         int relPowerRedColor = (int) (LEDS_POWER_RED_COLOR * (powerColor / 100.0));
         int relPowerIntensity = (int) (LEDS_POWER_MAX_INTENSITY * (powerIntensity / 100.0));
         byte[] cmd = { (byte)OPC_LEDS, LEDs, (byte)relPowerRedColor, (byte)relPowerIntensity };
+        send(cmd);
+    }
+
+    /**
+     * This command controls the LEDs common to all models of Roomba 600.
+     * @param debris Turns on the debris LED
+     * @param spot Turns on the spot LED
+     * @param dock Turns on the dock LED
+     * @param check_robot Turns on the check robot LED
+     * @param powerColor Controls the power LED red color relative to green: 0% = green, 100% = red.
+     *                   Intermediate values are intermediate colors (orange, yellow, etc).
+     * @param powerIntensity Controls the intensity of the power led. 0% = off, 100% = full intensity.
+     *                       Intermediate values are intermediate intensities.
+     * @throws IllegalArgumentException One of the arguments is out of bounds.
+     */
+    public void leds(boolean debris, boolean spot, boolean dock, boolean check_robot, int powerColor,
+                     int powerIntensity) throws IllegalArgumentException {
+
+        // Validate argument values
+        if (powerColor < 0 || powerColor > 255 || powerIntensity < 0 || powerIntensity > 255)
+            throw new IllegalArgumentException("Color and/or Intensity should be between 0 and 255");
+
+        log.info("Sending 'LEDs' command (debris: " + debris + ", spot: " + spot + ", dock: " + dock +
+                ", checkRobot: " + check_robot + ", powerRedColor: " + powerColor + ", powerIntensity: "
+                + powerIntensity + ") to roomba.");
+
+        // Create LEDs byte
+        byte LEDs = (byte)((debris?LEDS_DEBRIS_MASK:0) | (spot?LEDS_SPOT_MASK:0) | (dock?LEDS_DOCK_MASK:0) |
+                (check_robot?LEDS_CHECK_ROBOT_MASK:0));
+        byte[] cmd = { (byte)OPC_LEDS, LEDs, (byte)powerColor, (byte)powerIntensity };
         send(cmd);
     }
 
