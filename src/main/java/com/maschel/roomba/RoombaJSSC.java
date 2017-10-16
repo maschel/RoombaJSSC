@@ -474,9 +474,9 @@ public abstract class RoombaJSSC {
      * @param spot Turns on the spot LED
      * @param dock Turns on the dock LED
      * @param check_robot Turns on the check robot LED
-     * @param powerColor Controls the power LED red color relative to green: 0% = green, 100% = red.
+     * @param powerColor Controls the power LED color: 0 = green, 255 = red.
      *                   Intermediate values are intermediate colors (orange, yellow, etc).
-     * @param powerIntensity Controls the intensity of the power led. 0% = off, 100% = full intensity.
+     * @param powerIntensity Controls the intensity of the power led. 0 = off, 255 = full intensity.
      *                       Intermediate values are intermediate intensities.
      * @throws IllegalArgumentException One of the arguments is out of bounds.
      */
