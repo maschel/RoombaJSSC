@@ -376,8 +376,8 @@ public abstract class RoombaJSSC {
             throw new IllegalArgumentException("PWM should be between -100% and 100%");
 
         log.info("Sending 'drivePWM' command (right PWM: " + rightPWM + "%, left PWM: " + leftPWM + "%) to roomba.");
-        int relRightPWM = (int) (DRIVE_WHEEL_MAX_POWER * (rightPWM / 100.0));
-        int relLeftPWM = (int) (DRIVE_WHEEL_MAX_POWER * (leftPWM / 100.0));
+        int relRightPWM = DRIVE_WHEEL_MAX_POWER * rightPWM / 100;
+        int relLeftPWM = DRIVE_WHEEL_MAX_POWER * leftPWM / 100;
         byte[] cmd = { (byte)OPC_DRIVE_PWM, (byte)(relRightPWM >>> 8), (byte)relRightPWM,
                         (byte)(relLeftPWM >>> 8), (byte)relLeftPWM
         };
@@ -429,9 +429,9 @@ public abstract class RoombaJSSC {
 
         log.info("Sending 'motorsPWM' command (mainBrushPWM: " + mainBrushPWM + "%, sideBrushPWM: " + sideBrushPWM +
                 "%, vacuumPWM: " + vacuumPWM + "%) to roomba.");
-        int relMainBrushPWM = (int) (MOTORS_MAX_POWER * (mainBrushPWM / 100.0));
-        int relSideBrushPWM = (int) (MOTORS_MAX_POWER * (sideBrushPWM / 100.0));
-        int relVacuumPWM    = (int) (MOTORS_MAX_POWER * (vacuumPWM / 100.0));
+        int relMainBrushPWM = MOTORS_MAX_POWER * mainBrushPWM / 100;
+        int relSideBrushPWM = MOTORS_MAX_POWER * sideBrushPWM / 100;
+        int relVacuumPWM    = MOTORS_MAX_POWER * vacuumPWM / 100;
         byte[] cmd = { (byte)OPC_PWM_MOTORS, (byte)relMainBrushPWM, (byte)relSideBrushPWM, (byte)relVacuumPWM };
         send(cmd);
     }
@@ -462,8 +462,8 @@ public abstract class RoombaJSSC {
         // Create LEDs byte
         byte LEDs = (byte)((debris?LEDS_DEBRIS_MASK:0) | (spot?LEDS_SPOT_MASK:0) | (dock?LEDS_DOCK_MASK:0) |
                             (check_robot?LEDS_CHECK_ROBOT_MASK:0));
-        int relPowerRedColor = (int) (LEDS_POWER_RED_COLOR * (powerColor / 100.0));
-        int relPowerIntensity = (int) (LEDS_POWER_MAX_INTENSITY * (powerIntensity / 100.0));
+        int relPowerRedColor = LEDS_POWER_RED_COLOR * powerColor / 100;
+        int relPowerIntensity = LEDS_POWER_MAX_INTENSITY * powerIntensity / 100;
         byte[] cmd = { (byte)OPC_LEDS, LEDs, (byte)relPowerRedColor, (byte)relPowerIntensity };
         send(cmd);
     }
