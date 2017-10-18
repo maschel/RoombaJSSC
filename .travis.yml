@@ -1,8 +1,7 @@
 language: java
 jdk:
   - oraclejdk8
-  - oraclejdk7
-  - openjdk7
+  - openjdk8
 install:
   - mvn --settings .travis/settings.xml install -DskipTests=true -Dgpg.skip -Dmaven.javadoc.skip=true -Dcobertura.skip=true -Dcoveralls.skip=true -B -V
 before_install:
@@ -14,6 +13,7 @@ deploy:
   -
     provider: script
     script: .travis/deploy.sh
+    skip_cleanup: true
     on:
       repo: maschel/RoombaJSSC
       branch: master
