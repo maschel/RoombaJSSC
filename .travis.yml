@@ -1,19 +1,19 @@
 language: java
 jdk:
   - oraclejdk8
-  - oraclejdk7
-  - openjdk7
+  - openjdk8
 install:
-  - mvn --settings .travis/settings.xml install -DskipTests=true -Dmaven.javadoc.skip=true -Dcobertura.skip=true -Dcoveralls.skip=true -B -V
+  - mvn --settings .travis/settings.xml install -DskipTests=true -Dgpg.skip -Dmaven.javadoc.skip=true -Dcobertura.skip=true -Dcoveralls.skip=true -B -V
 before_install:
-  - echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import
-  - echo $GPG_OWNERTRUST | base64 --decode | $GPG_EXECUTABLE --import-ownertrust
+  - if [ ! -z "$GPG_SECRET_KEYS" ]; then echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import; fi
+  - if [ ! -z "$GPG_OWNERTRUST" ]; then echo $GPG_OWNERTRUST | base64 --decode | $GPG_EXECUTABLE --import-ownertrust; fi
 after_success:
   - mvn clean cobertura:cobertura coveralls:report
 deploy:
   -
     provider: script
     script: .travis/deploy.sh
+    skip_cleanup: true
     on:
       repo: maschel/RoombaJSSC
       branch: master
@@ -21,6 +21,7 @@ deploy:
   -
     provider: script
     script: .travis/deploy.sh
+    skip_cleanup: true
     on:
       repo: maschel/RoombaJSSC
       tags: true

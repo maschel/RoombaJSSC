@@ -22,7 +22,7 @@ This library implements (basically) all the commands and sensors specified in th
 <dependency>
     <groupId>com.maschel</groupId>
     <artifactId>roombajssc</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
 </dependency>
 ```
 
