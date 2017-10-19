@@ -22,7 +22,7 @@ This library implements (basically) all the commands and sensors specified in th
 <dependency>
     <groupId>com.maschel</groupId>
     <artifactId>roombajssc</artifactId>
-    <version>1.0.2</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
@@ -255,7 +255,7 @@ This command lets you control the speed of Roomba’s main brush, side brush, an
    * `vacuumPWM` — Vacuum PWM (min: 0%, max: 100%)
  * **Exceptions:** `IllegalArgumentException` — One of the arguments is out of bounds.
 
-#### `public void leds(boolean debris, boolean spot, boolean dock, boolean check_robot, int powerColor, int powerIntensity) throws IllegalArgumentException`
+#### `public void relativeLeds(boolean debris, boolean spot, boolean dock, boolean check_robot, int powerColor, int powerIntensity) throws IllegalArgumentException`
 
 This command controls the LEDs common to all models of Roomba 600.
 
@@ -268,6 +268,23 @@ This command controls the LEDs common to all models of Roomba 600.
 
      Intermediate values are intermediate colors (orange, yellow, etc).
    * `powerIntensity` — Controls the intensity of the power led. 0% = off, 100% = full intensity.
+
+     Intermediate values are intermediate intensities.
+ * **Exceptions:** `IllegalArgumentException` — One of the arguments is out of bounds.
+
+#### `public void leds(boolean debris, boolean spot, boolean dock, boolean check_robot, int powerColor, int powerIntensity) throws IllegalArgumentException`
+
+This command controls the LEDs common to all models of Roomba 600.
+
+ * **Parameters:**
+   * `debris` — Turns on the debris LED
+   * `spot` — Turns on the spot LED
+   * `dock` — Turns on the dock LED
+   * `check_robot` — Turns on the check robot LED
+   * `powerColor` — Controls the power LED color: 0 = green, 255 = red.
+
+     Intermediate values are intermediate colors (orange, yellow, etc).
+   * `powerIntensity` — Controls the intensity of the power led. 0 = off, 255 = full intensity.
 
      Intermediate values are intermediate intensities.
  * **Exceptions:** `IllegalArgumentException` — One of the arguments is out of bounds.
