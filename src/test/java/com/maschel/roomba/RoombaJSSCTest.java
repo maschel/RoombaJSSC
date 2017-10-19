@@ -212,8 +212,8 @@ public class RoombaJSSCTest extends RoombaJSSCTestSuite
 
     // Helper method for testScheduleArgumentValidation that checks input arguments
     private boolean assertScheduleInvalidArgument(int sun_hour, int sun_min, int mon_hour, int mon_min, int tue_hour,
-                                               int tue_min, int wed_hour, int wed_min, int thu_hour, int thu_min,
-                                               int fri_hour, int fri_min, int sat_hour, int sat_min) {
+                                                  int tue_min, int wed_hour, int wed_min, int thu_hour, int thu_min,
+                                                  int fri_hour, int fri_min, int sat_hour, int sat_min) {
         try {
             roombaSerial.schedule(false, false, false, false, false, false, false, sun_hour, sun_min, mon_hour,
                     mon_min, tue_hour, tue_min, wed_hour, wed_min, thu_hour, thu_min, fri_hour, fri_min, sat_hour,
@@ -501,16 +501,75 @@ public class RoombaJSSCTest extends RoombaJSSCTestSuite
     }
 
     /**
+     * Test relativeLeds command throws exception on invalid arguments
+     */
+    @Test
+    public void testRelativeLedsArgumentValidation() {
+        assertTrue(assertRelativeLedsArgumentValidation(0, 0));     // Success
+        assertTrue(assertRelativeLedsArgumentValidation(100, 100)); // Success
+        assertFalse(assertRelativeLedsArgumentValidation(-1, 0));   // Fail
+        assertFalse(assertRelativeLedsArgumentValidation(0, -1));   // Fail
+        assertFalse(assertRelativeLedsArgumentValidation(101, 0));  // Fail
+        assertFalse(assertRelativeLedsArgumentValidation(0, 101));  // Fail
+
+    }
+
+    // Helper method for testLedsArgumentValidation that checks input arguments
+    private boolean assertRelativeLedsArgumentValidation(int powerColor, int powerIntensity) {
+        try {
+            roombaSerial.relativeLeds(true, true, true, true, powerColor, powerIntensity);
+            return true;
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
+    }
+
+    /**
+     * Test the byte[] output of leds for correct OPC and byte value's for given arguments
+     * @throws SerialPortException
+     */
+    @Test
+    public void testRelativeLedsByteOutput() throws SerialPortException {
+        final int OPC_LEDS = 139;
+        final int relPowerRedColor = (0xff * 80/100); // 80% red of max (0xff)
+        final int relPowerIntensity = (0xff * 80/100); // 80% of max intensity (0xff)
+        // None
+        roombaSerial.relativeLeds(false, false, false, false, 0, 0);
+        byte[] expect_none = { (byte)OPC_LEDS, (byte)0x0, (byte)0x0, (byte)0x0 };
+        Mockito.verify(serialPort).writeBytes(Mockito.eq(expect_none));
+        // Debris
+        roombaSerial.relativeLeds(true, false, false, false, 80, 80);
+        byte[] expect_debris = { (byte)OPC_LEDS, (byte)0x1, (byte)relPowerRedColor, (byte)relPowerIntensity };
+        Mockito.verify(serialPort).writeBytes(Mockito.eq(expect_debris));
+        // Spot
+        roombaSerial.relativeLeds(false, true, false, false, 80, 80);
+        byte[] expect_spot = { (byte)OPC_LEDS, (byte)0x2, (byte)relPowerRedColor, (byte)relPowerIntensity };
+        Mockito.verify(serialPort).writeBytes(Mockito.eq(expect_spot));
+        // Dock
+        roombaSerial.relativeLeds(false, false, true, false, 80, 80);
+        byte[] expect_dock = { (byte)OPC_LEDS, (byte)0x4, (byte)relPowerRedColor, (byte)relPowerIntensity };
+        Mockito.verify(serialPort).writeBytes(Mockito.eq(expect_dock));
+        // Check robot
+        roombaSerial.relativeLeds(false, false, false, true, 80, 80);
+        byte[] expect_check_robot = { (byte)OPC_LEDS, (byte)0x8, (byte)relPowerRedColor, (byte)relPowerIntensity };
+        Mockito.verify(serialPort).writeBytes(Mockito.eq(expect_check_robot));
+        // All
+        roombaSerial.relativeLeds(true, true, true, true, 100, 100);
+        byte[] expect_all = { (byte)OPC_LEDS, (byte)0xF, (byte)0xff, (byte)0xff };
+        Mockito.verify(serialPort).writeBytes(Mockito.eq(expect_all));
+    }
+
+    /**
      * Test leds command throws exception on invalid arguments
      */
     @Test
     public void testLedsArgumentValidation() {
         assertTrue(assertLedsArgumentValidation(0, 0));     // Success
-        assertTrue(assertLedsArgumentValidation(100, 100)); // Success
+        assertTrue(assertLedsArgumentValidation(255, 255)); // Success
         assertFalse(assertLedsArgumentValidation(-1, 0));   // Fail
         assertFalse(assertLedsArgumentValidation(0, -1));   // Fail
-        assertFalse(assertLedsArgumentValidation(101, 0));  // Fail
-        assertFalse(assertLedsArgumentValidation(0, 101));  // Fail
+        assertFalse(assertLedsArgumentValidation(256, 0));  // Fail
+        assertFalse(assertLedsArgumentValidation(0, 256));  // Fail
 
     }
 
@@ -531,30 +590,28 @@ public class RoombaJSSCTest extends RoombaJSSCTestSuite
     @Test
     public void testLedsByteOutput() throws SerialPortException {
         final int OPC_LEDS = 139;
-        final int relPowerRedColor = (0xff * 80/100); // 80% red of max (0xff)
-        final int relPowerIntensity = (0xff * 80/100); // 80% of max intensity (0xff)
         // None
         roombaSerial.leds(false, false, false, false, 0, 0);
         byte[] expect_none = { (byte)OPC_LEDS, (byte)0x0, (byte)0x0, (byte)0x0 };
         Mockito.verify(serialPort).writeBytes(Mockito.eq(expect_none));
         // Debris
-        roombaSerial.leds(true, false, false, false, 80, 80);
-        byte[] expect_debris = { (byte)OPC_LEDS, (byte)0x1, (byte)relPowerRedColor, (byte)relPowerIntensity };
+        roombaSerial.leds(true, false, false, false, 204, 204);
+        byte[] expect_debris = { (byte)OPC_LEDS, (byte)0x1, (byte)204, (byte)204 };
         Mockito.verify(serialPort).writeBytes(Mockito.eq(expect_debris));
         // Spot
-        roombaSerial.leds(false, true, false, false, 80, 80);
-        byte[] expect_spot = { (byte)OPC_LEDS, (byte)0x2, (byte)relPowerRedColor, (byte)relPowerIntensity };
+        roombaSerial.leds(false, true, false, false, 204, 204);
+        byte[] expect_spot = { (byte)OPC_LEDS, (byte)0x2, (byte)204, (byte)204 };
         Mockito.verify(serialPort).writeBytes(Mockito.eq(expect_spot));
         // Dock
-        roombaSerial.leds(false, false, true, false, 80, 80);
-        byte[] expect_dock = { (byte)OPC_LEDS, (byte)0x4, (byte)relPowerRedColor, (byte)relPowerIntensity };
+        roombaSerial.leds(false, false, true, false, 204, 204);
+        byte[] expect_dock = { (byte)OPC_LEDS, (byte)0x4, (byte)204, (byte)204 };
         Mockito.verify(serialPort).writeBytes(Mockito.eq(expect_dock));
         // Check robot
-        roombaSerial.leds(false, false, false, true, 80, 80);
-        byte[] expect_check_robot = { (byte)OPC_LEDS, (byte)0x8, (byte)relPowerRedColor, (byte)relPowerIntensity };
+        roombaSerial.leds(false, false, false, true, 204, 204);
+        byte[] expect_check_robot = { (byte)OPC_LEDS, (byte)0x8, (byte)204, (byte)204 };
         Mockito.verify(serialPort).writeBytes(Mockito.eq(expect_check_robot));
         // All
-        roombaSerial.leds(true, true, true, true, 100, 100);
+        roombaSerial.leds(true, true, true, true, 255, 255);
         byte[] expect_all = { (byte)OPC_LEDS, (byte)0xF, (byte)0xff, (byte)0xff };
         Mockito.verify(serialPort).writeBytes(Mockito.eq(expect_all));
     }

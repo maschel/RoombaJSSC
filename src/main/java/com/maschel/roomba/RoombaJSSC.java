@@ -376,8 +376,8 @@ public abstract class RoombaJSSC {
             throw new IllegalArgumentException("PWM should be between -100% and 100%");
 
         log.info("Sending 'drivePWM' command (right PWM: " + rightPWM + "%, left PWM: " + leftPWM + "%) to roomba.");
-        int relRightPWM = (DRIVE_WHEEL_MAX_POWER * rightPWM/100);
-        int relLeftPWM = (DRIVE_WHEEL_MAX_POWER * leftPWM/100);
+        int relRightPWM = DRIVE_WHEEL_MAX_POWER * rightPWM / 100;
+        int relLeftPWM = DRIVE_WHEEL_MAX_POWER * leftPWM / 100;
         byte[] cmd = { (byte)OPC_DRIVE_PWM, (byte)(relRightPWM >>> 8), (byte)relRightPWM,
                         (byte)(relLeftPWM >>> 8), (byte)relLeftPWM
         };
@@ -429,9 +429,9 @@ public abstract class RoombaJSSC {
 
         log.info("Sending 'motorsPWM' command (mainBrushPWM: " + mainBrushPWM + "%, sideBrushPWM: " + sideBrushPWM +
                 "%, vacuumPWM: " + vacuumPWM + "%) to roomba.");
-        int relMainBrushPWM = (MOTORS_MAX_POWER * mainBrushPWM/100);
-        int relSideBrushPWM = (MOTORS_MAX_POWER * sideBrushPWM/100);
-        int relVacuumPWM    = (MOTORS_MAX_POWER * vacuumPWM/100);
+        int relMainBrushPWM = MOTORS_MAX_POWER * mainBrushPWM / 100;
+        int relSideBrushPWM = MOTORS_MAX_POWER * sideBrushPWM / 100;
+        int relVacuumPWM    = MOTORS_MAX_POWER * vacuumPWM / 100;
         byte[] cmd = { (byte)OPC_PWM_MOTORS, (byte)relMainBrushPWM, (byte)relSideBrushPWM, (byte)relVacuumPWM };
         send(cmd);
     }
@@ -448,7 +448,7 @@ public abstract class RoombaJSSC {
      *                       Intermediate values are intermediate intensities.
      * @throws IllegalArgumentException One of the arguments is out of bounds.
      */
-    public void leds(boolean debris, boolean spot, boolean dock, boolean check_robot, int powerColor,
+    public void relativeLeds(boolean debris, boolean spot, boolean dock, boolean check_robot, int powerColor,
                      int powerIntensity) throws IllegalArgumentException {
 
         // Validate argument values
@@ -458,12 +458,43 @@ public abstract class RoombaJSSC {
         log.info("Sending 'LEDs' command (debris: " + debris + ", spot: " + spot + ", dock: " + dock +
                 ", checkRobot: " + check_robot + ", powerRedColor: " + powerColor + ", powerIntensity: "
                 + powerIntensity + ") to roomba.");
+
         // Create LEDs byte
         byte LEDs = (byte)((debris?LEDS_DEBRIS_MASK:0) | (spot?LEDS_SPOT_MASK:0) | (dock?LEDS_DOCK_MASK:0) |
                             (check_robot?LEDS_CHECK_ROBOT_MASK:0));
-        int relPowerRedColor = (LEDS_POWER_RED_COLOR * powerColor/100);
-        int relPowerIntensity = (LEDS_POWER_MAX_INTENSITY * powerIntensity/100);
+        int relPowerRedColor = LEDS_POWER_RED_COLOR * powerColor / 100;
+        int relPowerIntensity = LEDS_POWER_MAX_INTENSITY * powerIntensity / 100;
         byte[] cmd = { (byte)OPC_LEDS, LEDs, (byte)relPowerRedColor, (byte)relPowerIntensity };
+        send(cmd);
+    }
+
+    /**
+     * This command controls the LEDs common to all models of Roomba 600.
+     * @param debris Turns on the debris LED
+     * @param spot Turns on the spot LED
+     * @param dock Turns on the dock LED
+     * @param check_robot Turns on the check robot LED
+     * @param powerColor Controls the power LED color: 0 = green, 255 = red.
+     *                   Intermediate values are intermediate colors (orange, yellow, etc).
+     * @param powerIntensity Controls the intensity of the power led. 0 = off, 255 = full intensity.
+     *                       Intermediate values are intermediate intensities.
+     * @throws IllegalArgumentException One of the arguments is out of bounds.
+     */
+    public void leds(boolean debris, boolean spot, boolean dock, boolean check_robot, int powerColor,
+                     int powerIntensity) throws IllegalArgumentException {
+
+        // Validate argument values
+        if (powerColor < 0 || powerColor > 255 || powerIntensity < 0 || powerIntensity > 255)
+            throw new IllegalArgumentException("Color and/or Intensity should be between 0 and 255");
+
+        log.info("Sending 'LEDs' command (debris: " + debris + ", spot: " + spot + ", dock: " + dock +
+                ", checkRobot: " + check_robot + ", powerRedColor: " + powerColor + ", powerIntensity: "
+                + powerIntensity + ") to roomba.");
+
+        // Create LEDs byte
+        byte LEDs = (byte)((debris?LEDS_DEBRIS_MASK:0) | (spot?LEDS_SPOT_MASK:0) | (dock?LEDS_DOCK_MASK:0) |
+                (check_robot?LEDS_CHECK_ROBOT_MASK:0));
+        byte[] cmd = { (byte)OPC_LEDS, LEDs, (byte)powerColor, (byte)powerIntensity };
         send(cmd);
     }
 
